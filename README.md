@@ -59,6 +59,7 @@ Standalone installs use `/ads`. Claude Code plugins are namespaced and use
 | --- | --- |
 | `/ads setup` | Create the client, account, KPI, privacy, and guardrail profile |
 | `/ads audit [all\|platform\|scope]` | Run a complete or scoped evidence-backed audit |
+| `/ads scorecard` | Grade a delivered report against declared targets, then return fixes and a plan |
 | `/ads plan` | Build channel, campaign, budget, competitor, and measurement plans |
 | `/ads create` | Produce copy, image, video, or product-photo assets |
 | `/ads launch --draft` | Draft a campaign mutation plan without changing the account |
@@ -157,7 +158,25 @@ of the same validated run bundle.
   <img src="assets/diagrams/ads-health-score.svg" alt="Health and evidence coverage remain separate; scoring requires an approved platform profile" width="100%">
 </p>
 
-Controls use `pass`, `fail`, `unknown`, or `not_applicable`.
+Two scores exist and they are never combined.
+
+**Performance score** grades a delivered report against the operator's own
+declared target and their own export, so it makes no platform claim and is
+available today. Components are `efficiency` (50), `waste_concentration` (25),
+and `pacing` (25). A target the operator did not declare is never substituted:
+its component stays `unknown`, input coverage drops, and coverage below 60%
+withholds the score. Every result discloses its own normalization convention and
+reports the raw ratio beside each derived component.
+
+```bash
+python -m claude_ads_core scorecard --platform google --targets targets.json report.csv
+```
+
+**Account health** grades platform-behavior controls and remains disabled on all
+twelve platforms. Enabling it requires approved per-control severity, source
+support, typed inputs, category weights, and regression evidence; inferring any
+of those would fabricate the number. Controls use `pass`, `fail`, `unknown`, or
+`not_applicable`.
 
 - Health, evidence coverage, regulatory exposure, and opportunities stay separate.
 - Unknown controls reduce evidence coverage without changing known health.
@@ -217,6 +236,7 @@ Useful focused checks:
 ```bash
 python -m claude_ads_core --version
 python -m claude_ads_core validate finding path/to/finding.json
+python -m claude_ads_core ingest-facts --platform google report.csv
 bash -n install.sh uninstall.sh
 ```
 

@@ -28,6 +28,8 @@ CORE_CONTRACT_NAMES = (
     "control-definition",
     "finding",
     "report-bundle",
+    "performance-facts",
+    "performance-scorecard",
 )
 CONTRACT_NAMES = CORE_CONTRACT_NAMES + WORKFLOW_CONTRACT_NAMES
 PLATFORMS = {
@@ -73,6 +75,14 @@ def _require_number(value: Any, path: str, *, minimum: float | None = None) -> f
     if minimum is not None and result < minimum:
         raise ContractError(f"{path} must be >= {minimum}")
     return result
+
+
+def _require_integer(value: Any, path: str, *, minimum: int | None = None) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ContractError(f"{path} must be an integer")
+    if minimum is not None and value < minimum:
+        raise ContractError(f"{path} must be >= {minimum}")
+    return value
 
 
 def _require_list(value: Any, path: str) -> Sequence[Any]:
@@ -272,12 +282,169 @@ def _validate_report_bundle(payload: Mapping[str, Any]) -> None:
     _require_list(scoring["categories"], "$.scoring.categories")
 
 
+PERFORMANCE_FACT_FIELDS = (
+    "date",
+    "campaign_id",
+    "campaign_name",
+    "campaign_status",
+    "creative_id",
+    "conversion_action",
+    "conversions",
+    "budget",
+    "spend",
+)
+COMPONENT_STATUSES = {"scored", "unknown", "not_applicable"}
+SCORECARD_STATUSES = {"graded", "provisional", "insufficient_evidence"}
+
+
+def _validate_performance_facts(payload: Mapping[str, Any]) -> None:
+    """Validate the additive row grain the performance engine scores from.
+
+    ``AccountSnapshot`` intentionally aggregates campaign spend and account
+    conversions, which discards the campaign-level conversion and daily spend
+    detail that performance scoring needs. This contract preserves that grain
+    without changing the snapshot contract.
+    """
+
+    _require_keys(payload, ("schema_version", "account", "window", "currency", "rows"))
+    _validate_version(payload)
+    account = _require_object(payload["account"], "$.account")
+    _require_keys(account, ("platform", "account_id"), "$.account")
+    if _require_string(account["platform"], "$.account.platform").lower() not in PLATFORMS:
+        raise ContractError(f"$.account.platform must be one of: {', '.join(sorted(PLATFORMS))}")
+    _require_string(account["account_id"], "$.account.account_id")
+    window = _require_object(payload["window"], "$.window")
+    _require_keys(window, ("start", "end"), "$.window")
+    start = _validate_date(window["start"], "$.window.start")
+    end = _validate_date(window["end"], "$.window.end")
+    if end < start:
+        raise ContractError("$.window.end must be on or after $.window.start")
+    currency = _require_string(payload["currency"], "$.currency")
+    if not re.fullmatch(r"[A-Z]{3}", currency):
+        raise ContractError("$.currency must be a three-letter uppercase currency code")
+
+    rows = _require_list(payload["rows"], "$.rows")
+    if not rows:
+        raise ContractError("$.rows must contain at least one row")
+    grains: set[tuple[str, str, str]] = set()
+    for index, row_value in enumerate(rows):
+        row = _require_object(row_value, f"$.rows[{index}]")
+        _require_keys(row, PERFORMANCE_FACT_FIELDS, f"$.rows[{index}]")
+        row_date = _validate_date(row["date"], f"$.rows[{index}].date")
+        if not start <= row_date <= end:
+            raise ContractError(f"$.rows[{index}].date falls outside $.window")
+        for field in ("campaign_id", "campaign_name", "campaign_status", "creative_id", "conversion_action"):
+            _require_string(row[field], f"$.rows[{index}].{field}")
+        for field in ("conversions", "budget", "spend"):
+            _require_number(row[field], f"$.rows[{index}].{field}", minimum=0)
+        grain = (row["date"], str(row["campaign_id"]), str(row["creative_id"]))
+        if grain in grains:
+            raise ContractError(f"$.rows[{index}] duplicates an additive row grain")
+        grains.add(grain)
+
+
+def _validate_performance_scorecard(payload: Mapping[str, Any]) -> None:
+    _require_keys(
+        payload,
+        (
+            "schema_version",
+            "account",
+            "window",
+            "currency",
+            "performance_score",
+            "grade",
+            "status",
+            "input_coverage",
+            "scoring_convention",
+            "grade_scale",
+            "grading_basis",
+            "totals",
+            "components",
+            "campaigns",
+            "daily_spend",
+            "opportunities",
+            "missing_inputs",
+            "caveats",
+        ),
+    )
+    _validate_version(payload)
+    account = _require_object(payload["account"], "$.account")
+    _require_keys(account, ("platform", "account_id"), "$.account")
+    window = _require_object(payload["window"], "$.window")
+    _require_keys(window, ("start", "end"), "$.window")
+    currency = _require_string(payload["currency"], "$.currency")
+    if not re.fullmatch(r"[A-Z]{3}", currency):
+        raise ContractError("$.currency must be a three-letter uppercase currency code")
+    if payload["status"] not in SCORECARD_STATUSES:
+        raise ContractError(f"$.status must be one of: {', '.join(sorted(SCORECARD_STATUSES))}")
+    coverage = _require_number(payload["input_coverage"], "$.input_coverage", minimum=0)
+    if coverage > 100:
+        raise ContractError("$.input_coverage must be <= 100")
+
+    score = payload["performance_score"]
+    if score is None:
+        if payload["grade"] is not None:
+            raise ContractError("$.grade must be null when $.performance_score is null")
+    else:
+        value = _require_number(score, "$.performance_score", minimum=0)
+        if value > 100:
+            raise ContractError("$.performance_score must be <= 100")
+        _require_string(payload["grade"], "$.grade")
+    if payload["status"] == "insufficient_evidence" and score is not None:
+        raise ContractError("$.performance_score must be null when coverage is insufficient")
+
+    for field in ("scoring_convention", "grade_scale", "grading_basis"):
+        _require_string(payload[field], f"$.{field}")
+
+    totals = _require_object(payload["totals"], "$.totals")
+    _require_keys(totals, ("spend", "conversions", "cpa", "campaign_count", "day_count"), "$.totals")
+    for field in ("spend", "conversions"):
+        _require_number(totals[field], f"$.totals.{field}", minimum=0)
+    for field in ("cpa", "available_budget"):
+        if totals.get(field) is not None:
+            _require_number(totals[field], f"$.totals.{field}", minimum=0)
+    for field in ("campaign_count", "day_count"):
+        _require_integer(totals[field], f"$.totals.{field}", minimum=0)
+
+    components = _require_list(payload["components"], "$.components")
+    if not components:
+        raise ContractError("$.components must not be empty")
+    seen: set[str] = set()
+    for index, component_value in enumerate(components):
+        component = _require_object(component_value, f"$.components[{index}]")
+        _require_keys(component, ("component", "weight", "score", "status", "basis", "observation"), f"$.components[{index}]")
+        name = _require_string(component["component"], f"$.components[{index}].component")
+        if name in seen:
+            raise ContractError(f"$.components[{index}].component is duplicated")
+        seen.add(name)
+        _require_number(component["weight"], f"$.components[{index}].weight", minimum=0)
+        if component["status"] not in COMPONENT_STATUSES:
+            raise ContractError(f"$.components[{index}].status is invalid")
+        if component["status"] == "scored":
+            component_score = _require_number(component["score"], f"$.components[{index}].score", minimum=0)
+            if component_score > 100:
+                raise ContractError(f"$.components[{index}].score must be <= 100")
+        elif component["score"] is not None:
+            raise ContractError(f"$.components[{index}].score must be null unless the component is scored")
+        for field in ("basis", "observation"):
+            _require_string(component[field], f"$.components[{index}].{field}")
+
+    for field in ("campaigns", "daily_spend", "opportunities"):
+        for index, item in enumerate(_require_list(payload[field], f"$.{field}")):
+            _require_object(item, f"$.{field}[{index}]")
+    for field in ("missing_inputs", "caveats"):
+        for index, value in enumerate(_require_list(payload[field], f"$.{field}")):
+            _require_string(value, f"$.{field}[{index}]")
+
+
 _VALIDATORS: dict[str, Callable[[Mapping[str, Any]], None]] = {
     "account-snapshot": _validate_account_snapshot,
     "run-manifest": _validate_run_manifest,
     "control-definition": _validate_control_definition,
     "finding": _validate_finding,
     "report-bundle": _validate_report_bundle,
+    "performance-facts": _validate_performance_facts,
+    "performance-scorecard": _validate_performance_scorecard,
 }
 
 

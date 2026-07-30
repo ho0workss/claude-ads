@@ -50,6 +50,7 @@ diagnosis or mutation unsafe.
 | --- | --- |
 | Set up a client, brand, account, or guardrails | `/ads setup` |
 | Full or scoped account review | `/ads audit [all|platform|scope]` |
+| Score a delivered report against declared targets | `/ads scorecard` |
 | Campaign, channel, budget, competitor, or measurement plan | `/ads plan` |
 | Copy, image, video, or product-photo production | `/ads create` |
 | Draft or execute a campaign launch | `/ads launch [--draft|--apply]` |
@@ -71,6 +72,9 @@ valid when their meaning is unambiguous:
 - `/ads budget`, `competitor`, `math` -> scoped plan or financial model.
 - `/ads test` -> experiment; `/ads dna` -> setup; `/ads generate` and
   `/ads photoshoot` -> create.
+- A delivered report plus a request for a score, grade, or "how did this
+  perform" -> `/ads scorecard`. A request for account health stays blocked
+  while the health profiles are disabled.
 - A stale or expired platform claim -> research refresh, then validation.
 - Credential or token storage -> setup; install safety -> setup; uninstall safety
   and ownership checks -> validate.
@@ -296,7 +300,9 @@ Resolve resources from the installed plugin root or the current source checkout;
 never hardcode `~/.claude`. Load only what the request needs:
 
 - `references/thinking-framework.md`: full thinking discipline.
-- `references/scoring-system.md`: scoring behavior and coverage semantics.
+- `references/scoring-system.md`: scoring behavior and coverage semantics,
+  including why account health stays disabled while a target-relative
+  performance score is available.
 - `references/benchmarks.md`: contextual benchmarks.
 - `references/conversion-tracking.md`: measurement foundations.
 - `references/compliance.md` and `compliance-requirements.md`: policy and regulation.

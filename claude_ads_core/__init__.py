@@ -43,6 +43,14 @@ from .reporting import (
     resolve_report_path,
     write_report_bundle,
 )
+from .performance import (
+    COMPONENT_WEIGHTS,
+    CampaignPerformance,
+    ComponentScore,
+    PerformanceError,
+    PerformanceScorecard,
+    score_performance,
+)
 from .product_status import ProductStatusError, evaluate_product_status
 from .scoring import (
     CATEGORY_WEIGHT_TOTAL,
@@ -56,8 +64,14 @@ from .scoring import (
 
 __all__ = [
     "CATEGORY_WEIGHT_TOTAL",
+    "COMPONENT_WEIGHTS",
     "SEVERITY_WEIGHTS",
     "AccountSnapshot",
+    "CampaignPerformance",
+    "ComponentScore",
+    "PerformanceError",
+    "PerformanceScorecard",
+    "score_performance",
     "Adapter",
     "AdapterCapabilities",
     "ContractError",

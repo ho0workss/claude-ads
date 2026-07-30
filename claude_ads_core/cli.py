@@ -12,6 +12,7 @@ from typing import Any, Sequence
 from . import __version__
 from .adapters import AdapterError, GenericCSVExportAdapter
 from .contracts import CONTRACT_NAMES, ContractError, load_contract, validate_contract
+from .performance import PerformanceError, score_performance
 from .reporting import ReportRenderError, write_report_bundle
 from .product_status import ProductStatusError, evaluate_product_status
 from .scoring import ScoringError, score_account, score_portfolio
@@ -69,6 +70,26 @@ def build_parser() -> argparse.ArgumentParser:
     ingest = commands.add_parser("ingest-export", help="normalize a generic CSV export")
     ingest.add_argument("--platform", required=True)
     ingest.add_argument("path")
+
+    facts = commands.add_parser(
+        "ingest-facts",
+        help="normalize a generic CSV export to the additive performance row grain",
+    )
+    facts.add_argument("--platform", required=True)
+    facts.add_argument("path")
+
+    scorecard = commands.add_parser(
+        "scorecard",
+        help="grade delivered performance against operator-declared targets",
+    )
+    scorecard.add_argument("path", help="CSV export, or a PerformanceFacts JSON file with --facts")
+    scorecard.add_argument("--platform", required=True)
+    scorecard.add_argument("--targets", help="JSON file declaring target_cpa, planned_spend, or budget_basis")
+    scorecard.add_argument(
+        "--facts",
+        action="store_true",
+        help="treat path as a PerformanceFacts JSON file instead of a CSV export",
+    )
     return parser
 
 
@@ -149,7 +170,27 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         elif args.command == "ingest-export":
             _emit(GenericCSVExportAdapter(args.platform).read_snapshot(args.path))
-    except (AdapterError, ContractError, ProductStatusError, ReportRenderError, ScoringError) as exc:
+        elif args.command == "ingest-facts":
+            _emit(GenericCSVExportAdapter(args.platform).read_facts(args.path))
+        elif args.command == "scorecard":
+            if args.facts:
+                facts = load_contract("performance-facts", args.path)
+                if str(facts["account"]["platform"]).lower() != args.platform.strip().lower():
+                    raise PerformanceError("--platform does not match the facts payload platform")
+            else:
+                facts = GenericCSVExportAdapter(args.platform).read_facts(args.path)
+            targets = _read_json(args.targets) if args.targets else None
+            scorecard = score_performance(facts, targets).to_dict()
+            validate_contract("performance-scorecard", scorecard)
+            _emit(scorecard)
+    except (
+        AdapterError,
+        ContractError,
+        PerformanceError,
+        ProductStatusError,
+        ReportRenderError,
+        ScoringError,
+    ) as exc:
         print(json.dumps({"status": "invalid", "error": str(exc)}, sort_keys=True), file=sys.stderr)
         return 2
     return 0

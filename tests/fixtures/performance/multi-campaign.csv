@@ -1,0 +1,13 @@
+date,account_id,account_name,campaign_id,campaign_name,campaign_status,creative_id,creative_name,conversion_action,conversions,budget,spend,currency
+2026-07-01,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-a,Sanitized Headline A,purchase,4,100.00,49.00,USD
+2026-07-01,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-b,Sanitized Headline B,purchase,4,100.00,49.00,USD
+2026-07-01,demo-perf-account,Sanitized Performance Demo,perf-c2,Sanitized Zero Conversion Display,active,perf-c2-a,Sanitized Banner A,purchase,0,50.00,40.00,USD
+2026-07-01,demo-perf-account,Sanitized Performance Demo,perf-c3,Sanitized Mid Video,active,perf-c3-a,Sanitized Video A,purchase,1,60.00,30.00,USD
+2026-07-02,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-a,Sanitized Headline A,purchase,4,100.00,49.00,USD
+2026-07-02,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-b,Sanitized Headline B,purchase,4,100.00,49.00,USD
+2026-07-02,demo-perf-account,Sanitized Performance Demo,perf-c2,Sanitized Zero Conversion Display,active,perf-c2-a,Sanitized Banner A,purchase,0,50.00,40.00,USD
+2026-07-02,demo-perf-account,Sanitized Performance Demo,perf-c3,Sanitized Mid Video,active,perf-c3-a,Sanitized Video A,purchase,1,60.00,30.00,USD
+2026-07-03,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-a,Sanitized Headline A,purchase,4,100.00,49.00,USD
+2026-07-03,demo-perf-account,Sanitized Performance Demo,perf-c1,Sanitized Efficient Search,active,perf-c1-b,Sanitized Headline B,purchase,4,100.00,49.00,USD
+2026-07-03,demo-perf-account,Sanitized Performance Demo,perf-c2,Sanitized Zero Conversion Display,active,perf-c2-a,Sanitized Banner A,purchase,0,50.00,40.00,USD
+2026-07-03,demo-perf-account,Sanitized Performance Demo,perf-c3,Sanitized Mid Video,active,perf-c3-a,Sanitized Video A,purchase,1,60.00,30.00,USD

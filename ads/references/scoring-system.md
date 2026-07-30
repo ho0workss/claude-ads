@@ -106,6 +106,34 @@ source-refresh discovery items. A disabled profile yields no account health and
 zero approved evidence coverage. Do not copy the reference weights above into a
 run or assign severity in a prompt.
 
+## Performance score versus account health
+
+These are two separate outputs with two different grading bases. Do not combine
+them, present one as the other, or let a performance score imply that health is
+available.
+
+| | Account health | Performance score |
+| --- | --- | --- |
+| Graded against | Platform-behavior controls | The operator's declared target and their own export |
+| Requires | Approved severity, category weights, and source support per control | `target_cpa`, plus `planned_spend` or `budget_basis` |
+| Engine | `claude_ads_core/scoring.py` | `claude_ads_core/performance.py` |
+| Contract | `report-bundle` | `performance-scorecard` |
+| Current state | Disabled on all twelve platforms | Available |
+| Blocked by | No approved source-grounded control-severity decision set | Nothing; it makes no platform claim |
+
+Account health is blocked because assigning severity or category weights without
+approved source support would fabricate the number. Performance scoring is
+available because it asserts nothing about platform behavior: it compares what
+the account spent and converted against what the operator said they wanted.
+
+The performance engine discloses its own normalization in every result
+(`scoring_convention`, `grade_scale`, `grading_basis`) and reports the raw ratio
+beside each derived component, so the operator can audit the mapping instead of
+trusting the score. A missing target leaves its component `unknown`, lowers input
+coverage, and below 60% coverage withholds the score. Never substitute a default
+target, an industry benchmark, or a platform norm for a target the operator did
+not declare.
+
 ## Portfolio health
 
 Use platform spend from the same time window:

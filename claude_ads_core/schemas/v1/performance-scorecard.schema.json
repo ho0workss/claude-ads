@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-marketing-hub:claude-ads:schema:core:v1:performance-scorecard.schema.json",
+  "title": "PerformanceScorecard v1",
+  "description": "Delivered performance graded against operator-declared targets and the account's own export. This is not an account-health score: no component encodes a platform-behavior claim, benchmark, or industry threshold, and the result must never be presented as, combined with, or substituted for account health.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "account",
+    "window",
+    "currency",
+    "performance_score",
+    "grade",
+    "status",
+    "input_coverage",
+    "scoring_convention",
+    "grade_scale",
+    "grading_basis",
+    "totals",
+    "components",
+    "campaigns",
+    "daily_spend",
+    "opportunities",
+    "missing_inputs",
+    "caveats"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "account": {
+      "type": "object",
+      "required": ["platform", "account_id"],
+      "properties": {
+        "platform": {"enum": ["google", "meta", "youtube", "linkedin", "tiktok", "microsoft", "apple", "amazon", "reddit", "pinterest", "snapchat", "x"]},
+        "account_id": {"type": "string", "minLength": 1},
+        "name": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "string", "format": "date"},
+        "end": {"type": "string", "format": "date"}
+      },
+      "additionalProperties": false
+    },
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "performance_score": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+    "grade": {
+      "type": ["string", "null"],
+      "enum": ["excellent", "good", "fair", "poor", "critical", null]
+    },
+    "status": {"enum": ["graded", "provisional", "insufficient_evidence"]},
+    "input_coverage": {"type": "number", "minimum": 0, "maximum": 100},
+    "scoring_convention": {"type": "string", "minLength": 1},
+    "grade_scale": {"type": "string", "minLength": 1},
+    "grading_basis": {"const": "operator-declared-targets-and-own-export"},
+    "totals": {
+      "type": "object",
+      "required": ["spend", "conversions", "cpa", "available_budget", "pacing_basis", "campaign_count", "day_count"],
+      "properties": {
+        "spend": {"type": "number", "minimum": 0},
+        "conversions": {"type": "number", "minimum": 0},
+        "cpa": {"type": ["number", "null"], "minimum": 0},
+        "available_budget": {"type": ["number", "null"], "minimum": 0},
+        "pacing_basis": {"enum": ["declared-planned-spend", "delivering-daily-budget", "declared-lifetime-budget", "undeclared"]},
+        "campaign_count": {"type": "integer", "minimum": 0},
+        "day_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["component", "weight", "score", "status", "basis", "observation"],
+        "properties": {
+          "component": {"enum": ["efficiency", "waste_concentration", "pacing"]},
+          "weight": {"type": "number", "minimum": 0, "maximum": 100},
+          "score": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+          "status": {"enum": ["scored", "unknown", "not_applicable"]},
+          "basis": {"type": "string", "minLength": 1},
+          "observation": {"type": "string", "minLength": 1},
+          "measured_value": {"type": ["number", "null"]},
+          "target_value": {"type": ["number", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "campaign_id",
+          "name",
+          "status",
+          "spend",
+          "conversions",
+          "cpa",
+          "spend_share",
+          "budget_total",
+          "budget_utilization",
+          "target_cpa_ratio"
+        ],
+        "properties": {
+          "campaign_id": {"type": "string", "minLength": 1},
+          "name": {"type": "string"},
+          "status": {"type": "string"},
+          "spend": {"type": "number", "minimum": 0},
+          "conversions": {"type": "number", "minimum": 0},
+          "cpa": {"type": ["number", "null"], "minimum": 0},
+          "spend_share": {"type": "number", "minimum": 0, "maximum": 100},
+          "budget_total": {"type": ["number", "null"], "minimum": 0},
+          "budget_utilization": {"type": ["number", "null"], "minimum": 0},
+          "target_cpa_ratio": {"type": ["number", "null"], "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "daily_spend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "spend"],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "spend": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "opportunities": {
+      "type": "array",
+      "description": "Unscored openings. Opportunities never add to or subtract from the performance score.",
+      "items": {
+        "type": "object",
+        "required": ["kind", "campaign_id", "observation", "requires"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "campaign_id": {"type": "string", "minLength": 1},
+          "observation": {"type": "string", "minLength": 1},
+          "requires": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "missing_inputs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "caveats": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}
