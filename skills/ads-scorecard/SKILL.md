@@ -83,6 +83,18 @@ order. Anchor every item to a number already present in the scorecard.
    the export cannot show. The normalized contract carries no impressions or
    clicks, so never report CTR, CPM, CPC, or frequency from this path.
 
+## Channels outside the twelve-platform contract
+
+A retail-media export can still be read and graded from the operator's own data,
+but it has no executable adapter and no platform capability claim. Load
+`ads/references/coupang-retail-media.md` for a Coupang report: it defines the
+mixed export grain, masked order counts, attribution-window handling, and the
+required placement-split, keyword-bid, and non-search-bid output.
+
+Apply the same evidence rules there as anywhere else. A recommended bid is
+`declared target cost per order x conversion rate` computed from the operator's
+own export; never substitute an industry figure for a target they did not state.
+
 ## Guardrails
 
 Do not recommend a pause, bid, budget, targeting, or creative change purely
