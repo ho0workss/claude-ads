@@ -49,19 +49,32 @@ least fourteen days after the window closes, or state the adjustment explicitly.
 
 ## Required output
 
-When an operator supplies a Coupang report, return all of the following.
+Lead with the keyword decisions. An operator acts on which keywords to add and
+which to exclude, so those come first and everything else supports them.
 
-1. **Placement budget split.** Current versus recommended share for
-   `검색`, `비검색`, and `오디언스 플러스`, with each placement's own conversion
-   rate, cost per order, and ROAS for every period supplied. Recommend the split
-   from observed cost per order, not from a fixed ratio.
-2. **Priority keywords with a recommended bid.** Rank by spend. For each, give
-   pooled clicks, pooled orders, conversion rate, current CPC, recommended bid,
-   and the adjustment.
-3. **Non-search placement bid.** The same calculation applied to `비검색` and
-   `오디언스 플러스`, which have no keyword-level control.
-4. **Reduce or pause candidates**, separated from items held back for
-   insufficient sample.
+1. **Keywords to add.** Keywords with a conversion history whose recent spend
+   has stopped or collapsed, so bidding must be restored for them to serve
+   again. Give pooled clicks, pooled orders, conversion rate, and the
+   recommended bid.
+2. **Keywords to exclude.** Register as negatives or stop bidding. Two grounds
+   only: enough clicks with zero orders, or a cost per order above twice the
+   declared target with enough clicks to judge. State which ground applies.
+3. **Bid increases and decreases** on keywords that stay active.
+4. **Held for insufficient sample**, listed separately so a thin keyword is
+   never mistaken for a proven loser.
+5. **Long-tail block.** Auto-expanded keywords below the click floor are too
+   small to judge individually and too numerous to exclude one at a time.
+   Report their count and combined spend, and recommend one bid ceiling for the
+   block rather than a list of negatives.
+6. **Placement budget split.** Current versus recommended share for `검색`,
+   `비검색`, and `오디언스 플러스`, with each placement's conversion rate, cost
+   per order, and ROAS per period. Recommend from observed cost per order, not a
+   fixed ratio.
+7. **Non-search placement bids** for `비검색` and `오디언스 플러스`, which have
+   no keyword-level control.
+
+Round every recommended bid to the nearest 10 KRW. Report bids as whole won
+figures, never with decimals.
 
 ## Bid formula
 
@@ -84,6 +97,11 @@ compare against the most recent period:
 Label confidence by pooled clicks: 100 or more is high, 50 to 99 is medium,
 below 50 is low. A bid built on fewer than five orders moves with a single
 order; say so next to the number.
+
+A recommendation whose direction contradicts its bucket is a classification
+error, not a finding. Sort by the action the number implies: a keyword whose
+recommended bid falls below its current CPC belongs in the decrease list even if
+its spend collapsed, and never in the list of keywords to restore.
 
 ## Guardrails
 
