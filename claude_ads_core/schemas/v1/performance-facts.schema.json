@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ai-marketing-hub:claude-ads:schema:core:v1:performance-facts.schema.json",
+  "title": "PerformanceFacts v1",
+  "description": "Additive daily observations at the (date, campaign_id, creative_id) grain. AccountSnapshot aggregates campaign spend and account conversions; this contract preserves the campaign-level conversion and daily spend detail that performance scoring requires.",
+  "type": "object",
+  "required": ["schema_version", "account", "window", "currency", "rows"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "account": {
+      "type": "object",
+      "required": ["platform", "account_id"],
+      "properties": {
+        "platform": {"enum": ["google", "meta", "youtube", "linkedin", "tiktok", "microsoft", "apple", "amazon", "reddit", "pinterest", "snapchat", "x"]},
+        "account_id": {"type": "string", "minLength": 1},
+        "name": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "string", "format": "date"},
+        "end": {"type": "string", "format": "date"}
+      },
+      "additionalProperties": false
+    },
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "campaign_id",
+          "campaign_name",
+          "campaign_status",
+          "creative_id",
+          "conversion_action",
+          "conversions",
+          "budget",
+          "spend"
+        ],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "campaign_id": {"type": "string", "minLength": 1},
+          "campaign_name": {"type": "string", "minLength": 1},
+          "campaign_status": {"type": "string", "minLength": 1},
+          "creative_id": {"type": "string", "minLength": 1},
+          "creative_name": {"type": "string"},
+          "conversion_action": {"type": "string", "minLength": 1},
+          "conversions": {"type": "number", "minimum": 0},
+          "budget": {"type": "number", "minimum": 0},
+          "spend": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

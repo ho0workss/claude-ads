@@ -18,5 +18,7 @@
   {"id":"route-optimize","prompt":"Optimize campaign bids and budget with a reversible draft change","expected_skill":"ads-optimize","forbidden_skills":["ads-budget","ads-launch"]},
   {"id":"route-research","prompt":"Refresh stale paid ads API policy benchmark and GitHub research sources","expected_skill":"ads-research","forbidden_skills":["ads-competitor","ads-audit"]},
   {"id":"route-validate","prompt":"Validate the Claude Ads run bundle schemas maturity and release readiness","expected_skill":"ads-validate","forbidden_skills":["ads-audit","ads-report"]},
-  {"id":"route-report","prompt":"Render a client PDF and HTML report from the validated JSON audit bundle","expected_skill":"ads-report","forbidden_skills":["ads-audit","ads-plan"]}
+  {"id":"route-report","prompt":"Render a client PDF and HTML report from the validated JSON audit bundle","expected_skill":"ads-report","forbidden_skills":["ads-audit","ads-plan"]},
+  {"id":"route-scorecard","prompt":"Here is my campaign report export, score how it performed against my target CPA and tell me what to fix","expected_skill":"ads-scorecard","forbidden_skills":["ads-audit","ads-report"]},
+  {"id":"route-scorecard-grade","prompt":"Grade last month's ad spend against our target cost per acquisition and plan next month's budget split","expected_skill":"ads-scorecard","forbidden_skills":["ads-plan","ads-optimize"]}
 ]

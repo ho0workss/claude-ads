@@ -8,7 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from claude_ads_core.contracts import CONTRACT_NAMES, ContractError, schema_path, validate_contract
+from claude_ads_core.contracts import (
+    CONTRACT_NAMES,
+    CORE_CONTRACT_NAMES,
+    ContractError,
+    schema_path,
+    validate_contract,
+)
 from claude_ads_core.orchestration import OrchestrationError, OrchestrationStore, evaluate_artifact_gate
 
 
@@ -53,7 +59,9 @@ def _set_path(payload: dict, path: tuple[str | int, ...], value) -> None:
 def _declared_integer_fields(repo_root: Path) -> set[tuple[str, tuple[str | int, ...], int]]:
     declared: set[tuple[str, tuple[str | int, ...], int]] = set()
     for contract in CONTRACT_NAMES:
-        if contract in {"account-snapshot", "control-definition", "finding", "report-bundle", "run-manifest"}:
+        # Core contracts are covered by their own suites, not by the
+        # workflow-fixture-driven parity parametrization below.
+        if contract in CORE_CONTRACT_NAMES:
             continue
         schema = json.loads(schema_path(contract).read_text(encoding="utf-8"))
 

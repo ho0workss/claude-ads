@@ -106,6 +106,21 @@ class GenericCSVExportAdapter(BaseAdapter):
         )
 
     def read_snapshot(self, source: str | PathLike[str]) -> AccountSnapshot:
+        return self._build_snapshot(self._read_rows(source))
+
+    def read_facts(self, source: str | PathLike[str]) -> dict[str, Any]:
+        """Return the additive row grain that snapshot aggregation discards.
+
+        ``read_snapshot`` sums conversions to the account and spend to the
+        campaign, which is correct for control findings but removes the
+        campaign-level conversion and daily spend detail performance scoring
+        needs. Both readers share one parser so the same row-grain, identity,
+        currency, and duplicate-grain invariants apply.
+        """
+
+        return self._build_facts(self._read_rows(source))
+
+    def _read_rows(self, source: str | PathLike[str]) -> list[dict[str, Any]]:
         path = Path(source)
         try:
             if not path.is_file():
@@ -137,7 +152,7 @@ class GenericCSVExportAdapter(BaseAdapter):
             raise CSVExportError(f"cannot read export: {exc}") from exc
         if not rows:
             raise CSVExportError("export must contain at least one data row")
-        return self._build_snapshot(rows)
+        return rows
 
     def _normalize_row(self, row: Mapping[str, str | None], row_number: int) -> dict[str, Any]:
         normalized = {field: _required(row, field, row_number) for field in REQUIRED_COLUMNS}
@@ -150,7 +165,7 @@ class GenericCSVExportAdapter(BaseAdapter):
             raise CSVExportError(f"row {row_number}: currency must be a three-letter uppercase code")
         return normalized
 
-    def _build_snapshot(self, rows: list[dict[str, Any]]) -> AccountSnapshot:
+    def _account_identity(self, rows: list[dict[str, Any]]) -> tuple[str, str, str]:
         account_ids = {str(row["account_id"]) for row in rows}
         account_names = {str(row["account_name"]) for row in rows}
         currencies = {str(row["currency"]) for row in rows}
@@ -160,6 +175,49 @@ class GenericCSVExportAdapter(BaseAdapter):
             raise CSVExportError("export must contain exactly one account_name")
         if len(currencies) != 1:
             raise CSVExportError("export must contain exactly one currency")
+        return next(iter(account_ids)), next(iter(account_names)), next(iter(currencies))
+
+    def _build_facts(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        account_id, account_name, currency = self._account_identity(rows)
+        facts = {
+            "schema_version": "1.0.0",
+            "account": {
+                "platform": self.platform,
+                "account_id": account_id,
+                "name": account_name,
+            },
+            "window": {
+                "start": min(row["date"] for row in rows).isoformat(),
+                "end": max(row["date"] for row in rows).isoformat(),
+            },
+            "currency": currency,
+            "rows": [
+                {
+                    "date": row["date"].isoformat(),
+                    "campaign_id": str(row["campaign_id"]),
+                    "campaign_name": str(row["campaign_name"]),
+                    "campaign_status": str(row["campaign_status"]),
+                    "creative_id": str(row["creative_id"]),
+                    "creative_name": str(row["creative_name"]),
+                    "conversion_action": str(row["conversion_action"]),
+                    "conversions": _number(row["conversions"]),
+                    "budget": _number(row["budget"]),
+                    "spend": _number(row["spend"]),
+                }
+                for row in sorted(
+                    rows,
+                    key=lambda row: (row["date"], str(row["campaign_id"]), str(row["creative_id"])),
+                )
+            ],
+        }
+        try:
+            validate_contract("performance-facts", facts)
+        except ContractError as exc:
+            raise CSVExportError(f"normalized facts violate PerformanceFacts contract: {exc}") from exc
+        return facts
+
+    def _build_snapshot(self, rows: list[dict[str, Any]]) -> AccountSnapshot:
+        account_id, account_name, currency = self._account_identity(rows)
 
         campaigns: dict[str, dict[str, Any]] = {}
         creatives: dict[str, dict[str, Any]] = {}
@@ -215,14 +273,14 @@ class GenericCSVExportAdapter(BaseAdapter):
             "schema_version": "1.0.0",
             "account": {
                 "platform": self.platform,
-                "account_id": next(iter(account_ids)),
-                "name": next(iter(account_names)),
+                "account_id": account_id,
+                "name": account_name,
             },
             "window": {
                 "start": min(row["date"] for row in rows).isoformat(),
                 "end": max(row["date"] for row in rows).isoformat(),
             },
-            "currency": next(iter(currencies)),
+            "currency": currency,
             "spend": _number(total_spend),
             "campaigns": [
                 {**campaign, "spend": _number(campaign["spend"])}
