@@ -103,6 +103,35 @@ error, not a finding. Sort by the action the number implies: a keyword whose
 recommended bid falls below its current CPC belongs in the decrease list even if
 its spend collapsed, and never in the list of keywords to restore.
 
+## Daily budget to base bid
+
+When the operator states a daily budget, also return a base bid per placement —
+the campaign-level bid that applies where no keyword bid overrides it.
+
+```text
+base_bid            = declared_target_cost_per_order x placement_conversion_rate
+required_clicks     = placement_budget / base_bid
+```
+
+Compare `required_clicks` against the highest daily click count that placement
+has ever recorded. At or below 80% of it, the budget is spendable. Between 80%
+and 120%, say it is tight. Above 120%, the budget cannot be spent at that bid:
+report the bid the budget would demand and say plainly that paying it breaks the
+declared target, so the operator chooses between the budget and the target.
+
+Two limits belong in the output every time, because omitting either makes the
+recommendation look stronger than it is.
+
+- The observed click ceiling was measured at the CPC actually paid then. A base
+  bid below that CPC buys less inventory, so a placement whose recommended bid
+  cuts its historical CPC will under-deliver its allocation. Say so instead of
+  reporting the capacity check as a clean pass.
+- Expected orders is not a forecast. Because each base bid is derived from the
+  target, `budget / base_bid x conversion_rate` reduces to
+  `budget / target_cost_per_order` for every budget and every split. Present it
+  as the identity it is. A real forecast needs the conversion rate to hold at
+  the new bid, which is exactly what the change is testing.
+
 ## Guardrails
 
 Never recommend pausing a keyword on zero orders alone. Separate "no orders with
